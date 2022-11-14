@@ -1,5 +1,11 @@
 #![feature(ptr_internals)]
+#![feature(rustc_private)]
+
 extern crate proc_macro;
+
+// extern crate rustc_hir;
+// extern crate rustc_ast_pretty;
+// extern crate rustc_span;
 
 use proc_macro::TokenStream;
 use std::borrow::Borrow;
@@ -8,10 +14,17 @@ use std::ptr::Unique;
 use syn::{parse_macro_input, DeriveInput, Expr, Lit};
 use quote::quote;
 
+use rustc_span::symbol::{kw, sym, Ident, Symbol};
+
+// struct Label {
+//     pub ident: Ident,
+// }
 
 #[proc_macro]
 pub fn unroll(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as Expr);
+
+    println!("hellowtf");
 
     let mut vec = Vec::new();
     if let Expr::ForLoop(ref f) = input {

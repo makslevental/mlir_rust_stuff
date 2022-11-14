@@ -1,0 +1,3 @@
+[toolchain]
+channel = "nightly"
+components = ["cargo", "llvm-tools-preview", "rustfmt"]
