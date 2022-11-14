@@ -1,3 +1,3 @@
 [toolchain]
-channel = "nightly"
-components = ["cargo", "llvm-tools-preview", "rustfmt"]
+channel = "stable"
+components = ["cargo", "llvm-tools-preview", "rust-src", "rust-std", "rustc", "rustc-dev", "rustfmt"]

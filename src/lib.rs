@@ -1,57 +1,46 @@
-#![feature(ptr_internals)]
-#![feature(rustc_private)]
-
 extern crate proc_macro;
-
-// extern crate rustc_hir;
-// extern crate rustc_ast_pretty;
-// extern crate rustc_span;
 
 use proc_macro::TokenStream;
 use std::borrow::Borrow;
-use std::ptr::Unique;
+use std::ops::DerefMut;
 
-use syn::{parse_macro_input, DeriveInput, Expr, Lit};
 use quote::quote;
+use rustc_ast::{HasTokens, Lit, LitKind};
+use rustc_ast::ExprKind;
+use rustc_ast::mut_visit::MutVisitor;
+use rustc_ast::tokenstream::TokenStreamBuilder;
+use rustc_data_structures::map_in_place::MapInPlace;
+use syn::Expr;
+use syn::parse_macro_input;
 
-use rustc_span::symbol::{kw, sym, Ident, Symbol};
+use crate::parse::librustc_expr;
 
-// struct Label {
-//     pub ident: Ident,
-// }
+mod parse;
 
 #[proc_macro]
 pub fn unroll(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as Expr);
-
-    println!("hellowtf");
-
     let mut vec = Vec::new();
-    if let Expr::ForLoop(ref f) = input {
-        if let Expr::Range(ref rang) = f.clone().expr.borrow() {
-            if let Expr::Lit(ref from) = rang.from.as_ref().unwrap().borrow() {
-                if let Lit::Int(ref i) = from.clone().lit {
-                    let i: i64 = i.base10_parse().unwrap();
-                    eprintln!("from wtfbbq {}", i);
-                    if let Expr::Lit(ref to) = rang.to.as_ref().unwrap().borrow() {
-                        if let Lit::Int(ref j) = to.clone().lit {
-                            let j: i64 = j.base10_parse().unwrap();
-                            eprintln!("to wtfbbq {}", j);
+    rustc_span::create_default_session_globals_then(|| {
+        match librustc_expr(input.to_string().as_str()).unwrap().into_inner().kind {
+            ExprKind::ForLoop(_, range, block, _) => {
+                let ExprKind::Range(Some(i), Some(j), _) = &range.kind else { panic!(); };
+                let ExprKind::Lit(Lit { token_lit, kind: LitKind::Int(i, _k), span }) = &i.kind else { panic!(); };
+                let ExprKind::Lit(Lit { token_lit, kind: LitKind::Int(j, _k), span }) = &j.kind else { panic!(); };
 
-                            for k in i..20 {
-                                vec.push(
-                                    f.body.stmts[0].clone()
-                                );
-                            }
-                        }
-                    }
+                dbg!(&i);
+                dbg!(&j);
+
+                for _ in 0..*j {
+                    vec.push(block.stmts[0].clone());
                 }
             }
+            _ => {}
         }
-    }
-    // let functions: TokenStream = vec.iter().collect();
+    });
+
+    let input = parse_macro_input!(input as Expr);
     let tokens = quote! {
-        #(#vec)*
+        #input
     };
 
     tokens.into()
